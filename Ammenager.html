@@ -1,0 +1,1144 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
+  <title>АмМенеджер | CRM для менеджеров (Firebase)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    /* Стили – без изменений, такие же как в последнем полном ответе */
+    :root { --bg: #f5f7fb; --surface: #ffffff; --border: #e9eef2; --text: #1e293b; --text-secondary: #64748b; --primary: #0f172a; --primary-hover: #334155; --accent: #38bdf8; --accent-hover: #7dd3fc; --danger: #ef4444; --warning: #f59e0b; --success: #10b981; --radius: 2.5rem; --modal-radius: 1.5rem; --transition: 0.2s ease; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 1rem; color: var(--text); }
+    .app-wrapper { width: 100%; max-width: 1300px; height: 95vh; max-height: 950px; background: var(--surface); border-radius: var(--radius); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.15); display: flex; flex-direction: column; overflow: hidden; position: relative; }
+    .screen { display: flex !important; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; height: 100%; width: 100%; position: absolute; top: 0; left: 0; }
+    .screen.active { opacity: 1; pointer-events: auto; position: relative; }
+    .auth-screen { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); align-items: center; justify-content: center; padding: 2rem; }
+    .auth-card { background: rgba(255,255,255,0.05); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.1); border-radius: 2rem; padding: 2.5rem 2rem; width: 100%; max-width: 450px; text-align: center; color: white; box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
+    .auth-card .auth-icon { font-size: 3rem; color: var(--accent); margin-bottom: 0.8rem; }
+    .auth-card h2 { font-weight: 700; font-size: 2.2rem; margin-bottom: 0.2rem; letter-spacing: -0.5px; }
+    .auth-card .subtitle { color: #94a3b8; margin-bottom: 2rem; font-size: 0.95rem; }
+    .input-group { background: rgba(255,255,255,0.08); border-radius: 1rem; padding: 0.2rem 0.2rem 0.2rem 1.2rem; display: flex; align-items: center; border: 1px solid rgba(255,255,255,0.2); margin-bottom: 1rem; }
+    .input-group i { font-size: 1.2rem; color: var(--accent); margin: 0 0.3rem 0 0; min-width: 1.5rem; }
+    .input-group input { background: transparent; border: none; padding: 0.9rem 0.5rem; font-size: 1.1rem; color: white; width: 100%; outline: none; }
+    .input-group input::placeholder { color: #64748b; }
+    .auth-btn { background: var(--accent); border: none; width: 100%; padding: 1rem; border-radius: 1rem; font-weight: 600; font-size: 1.1rem; color: #0f172a; cursor: pointer; transition: var(--transition); display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-top: 0.5rem; }
+    .auth-btn:hover { background: var(--accent-hover); }
+    .hint { color: #94a3b8; font-size: 0.8rem; margin-top: 1rem; }
+    .input-group input:read-only { opacity: 0.7; }
+    .dashboard { display: flex; flex-direction: column; height: 100%; }
+    .global-banner { background: #ffedd5; border-bottom: 1px solid #fdba74; padding: 0.75rem 2rem; display: flex; align-items: center; justify-content: space-between; font-size: 0.9rem; font-weight: 500; gap: 1rem; }
+    .global-banner .banner-text { flex: 1; }
+    .global-banner .banner-close { background: none; border: none; color: #9a3412; cursor: pointer; font-size: 1.2rem; padding: 0.3rem; border-radius: 50%; transition: var(--transition); }
+    .global-banner .banner-close:hover { background: rgba(0,0,0,0.1); }
+    .top-bar { padding: 1rem 2rem; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; position: relative; }
+    .user-greeting { display: flex; align-items: center; gap: 0.8rem; }
+    .avatar { background: var(--primary); color: white; width: 44px; height: 44px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.2rem; overflow: hidden; cursor: pointer; position: relative; transition: var(--transition); }
+    .avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .avatar:hover { opacity: 0.8; }
+    .avatar .overlay-icon { position: absolute; bottom: 0; right: 0; background: rgba(0,0,0,0.6); color: white; border-radius: 50%; width: 16px; height: 16px; font-size: 10px; display: flex; align-items: center; justify-content: center; }
+    .user-info { display: flex; flex-direction: column; }
+    .user-name-display { font-weight: 600; font-size: 1rem; display: flex; align-items: center; gap: 0.3rem; }
+    .online-dot { width: 8px; height: 8px; background: var(--success); border-radius: 50%; display: inline-block; box-shadow: 0 0 0 2px white; }
+    .user-email-display { font-size: 0.8rem; color: var(--text-secondary); }
+    .last-login-display { font-size: 0.75rem; color: #94a3b8; margin-top: 0.1rem; }
+    .date-badge { background: #f1f5f9; padding: 0.5rem 1.2rem; border-radius: 2rem; font-weight: 500; color: var(--text); font-size: 0.9rem; }
+    .header-buttons { display: flex; align-items: center; gap: 0.8rem; flex-wrap: wrap; }
+    .btn-icon { background: transparent; border: 1px solid #cbd5e1; padding: 0.5rem 1.2rem; border-radius: 2rem; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 0.4rem; color: #475569; transition: var(--transition); font-size: 0.9rem; }
+    .btn-icon:hover { background: #f1f5f9; }
+    .admin-badge { background: #fef3c7; color: #92400e; padding: 0.3rem 1rem; border-radius: 2rem; font-size: 0.8rem; font-weight: 600; }
+    .chat-btn-wrapper { position: relative; }
+    .unread-badge { position: absolute; top: -6px; right: -6px; background: var(--danger); color: white; width: 20px; height: 20px; border-radius: 50%; font-size: 0.7rem; font-weight: 700; display: none; align-items: center; justify-content: center; }
+    .global-notif-wrapper { position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); z-index: 10; display: none; }
+    .notif-btn-global { background: white; border: 1px solid var(--border); box-shadow: 0 4px 6px rgba(0,0,0,0.05); width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: var(--transition); font-size: 1.2rem; color: var(--text-secondary); position: relative; }
+    .notif-btn-global:hover { background: #f8fafc; color: var(--primary); }
+    .notif-btn-global .unread-badge { top: -4px; right: -4px; }
+    @keyframes bellRing { 0% { transform: rotate(0deg); } 10% { transform: rotate(15deg); } 20% { transform: rotate(-15deg); } 30% { transform: rotate(10deg); } 40% { transform: rotate(-10deg); } 50% { transform: rotate(0deg); } 100% { transform: rotate(0deg); } }
+    .bell-animation { animation: bellRing 0.6s ease-in-out; }
+    .notifications-dropdown { position: absolute; top: 52px; right: 0; width: 360px; max-width: calc(100vw - 2rem); max-height: 420px; overflow-y: auto; background: white; border: 1px solid var(--border); border-radius: 1.2rem; box-shadow: 0 20px 40px rgba(0,0,0,0.15); display: block; opacity: 0; pointer-events: none; transform: translateY(-10px); transition: opacity 0.2s ease, transform 0.2s ease; z-index: 50; }
+    .notifications-dropdown.show { opacity: 1; pointer-events: auto; transform: translateY(0); }
+    .notifications-dropdown .notif-item { padding: 0.7rem 0.8rem; border-radius: 0.8rem; font-size: 0.85rem; display: flex; justify-content: space-between; align-items: flex-start; cursor: pointer; transition: background 0.1s; margin-bottom: 0.3rem; }
+    .notifications-dropdown .notif-item:last-child { margin-bottom: 0; }
+    .notifications-dropdown .notif-item:hover { background: #f1f5f9; }
+    .notif-item .notif-content { flex: 1; }
+    .notif-item .notif-time { font-size: 0.7rem; color: var(--text-secondary); margin-top: 0.2rem; }
+    .notif-item .notif-close { background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 1rem; padding: 0.2rem 0.4rem; border-radius: 50%; transition: var(--transition); margin-left: 0.5rem; opacity: 0; }
+    .notif-item:hover .notif-close { opacity: 1; }
+    .notif-item .notif-close:hover { background: #fee2e2; color: var(--danger); }
+    .clients-area { flex: 1; display: flex; flex-direction: column; padding: 1.5rem; overflow-y: auto; }
+    .section-title { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem; }
+    .section-title h2 { font-size: 1.5rem; }
+    .add-client-btn { background: var(--primary); color: white; border: none; padding: 0.6rem 1.4rem; border-radius: 2rem; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 0.4rem; transition: var(--transition); font-size: 0.9rem; }
+    .add-client-btn:hover { background: var(--primary-hover); }
+    .search-container { position: relative; margin-bottom: 1rem; }
+    .search-container input { width: 100%; padding: 0.8rem 1rem 0.8rem 3rem; border: 1px solid #cbd5e1; border-radius: 2rem; font-size: 0.95rem; background: white; outline: none; transition: border-color var(--transition); }
+    .search-container input:focus { border-color: var(--accent); }
+    .search-container i { position: absolute; left: 1.2rem; top: 50%; transform: translateY(-50%); color: var(--text-secondary); font-size: 1rem; }
+    .client-table-wrapper { overflow-x: auto; border-radius: 1rem; border: 1px solid var(--border); }
+    table { width: 100%; border-collapse: collapse; background: white; font-size: 0.9rem; min-width: 950px; }
+    thead th { position: sticky; top: 0; z-index: 1; }
+    th { text-align: left; padding: 0.9rem 1rem; background: #f8fafc; font-weight: 600; color: var(--text); border-bottom: 1px solid #e2e8f0; }
+    td { padding: 0.8rem 1rem; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+    .client-row { cursor: pointer; transition: background var(--transition); }
+    .client-row:hover { background: #f8fafc; }
+    .comment-cell { max-width: 160px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; color: #2563eb; }
+    .reminder-icon { color: var(--warning); margin-right: 0.3rem; }
+    .badge { display: inline-block; padding: 0.25rem 0.8rem; border-radius: 1rem; font-size: 0.75rem; font-weight: 600; }
+    .badge-new { background: #dbeafe; color: #1e40af; }
+    .badge-inwork { background: #fef3c7; color: #92400e; }
+    .badge-thinking { background: #fce7f3; color: #9d174d; }
+    .badge-done { background: #d1fae5; color: #065f46; }
+    .badge-reject { background: #fee2e2; color: #991b1b; }
+    .badge-transfer { background: #fee2e2; color: #991b1b; border: 1px dashed var(--danger); }
+    .action-icons i { margin: 0 0.3rem; cursor: pointer; color: var(--text-secondary); transition: var(--transition); }
+    .action-icons i:hover { color: var(--primary); }
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.7); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.25s ease; }
+    .modal-overlay.show { opacity: 1; pointer-events: auto; }
+    .modal { background: var(--surface); border-radius: var(--modal-radius); padding: 2rem; width: 90%; max-width: 520px; max-height: 85vh; overflow-y: auto; box-shadow: 0 30px 50px rgba(0,0,0,0.3); }
+    .modal h3 { margin-bottom: 1.5rem; }
+    .form-group { margin-bottom: 1.2rem; }
+    .form-group label { font-weight: 500; display: block; margin-bottom: 0.3rem; font-size: 0.9rem; }
+    .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 0.8rem; border: 1px solid #cbd5e1; border-radius: 0.8rem; font-family: inherit; font-size: 0.95rem; background: white; }
+    .form-group select { appearance: none; background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%23475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>'); background-repeat: no-repeat; background-position: right 0.8rem center; background-size: 1.2rem; }
+    .checkbox-group { display: flex; align-items: center; gap: 0.5rem; }
+    .checkbox-group input { width: auto; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 0.8rem; margin-top: 1.5rem; }
+    .btn-secondary { background: #e2e8f0; border: none; padding: 0.7rem 1.5rem; border-radius: 2rem; cursor: pointer; font-weight: 500; font-size: 0.9rem; }
+    .btn-primary { background: var(--primary); color: white; border: none; padding: 0.7rem 1.8rem; border-radius: 2rem; cursor: pointer; font-weight: 500; font-size: 0.9rem; }
+    .btn-danger { background: var(--danger); color: white; border: none; padding: 0.3rem 0.8rem; border-radius: 2rem; cursor: pointer; font-size: 0.8rem; }
+    .btn-danger:hover { background: #dc2626; }
+    .toast-notification { position: fixed; bottom: 20px; right: 20px; background: var(--primary); color: white; padding: 1rem 1.8rem; border-radius: 2rem; font-weight: 500; font-size: 0.9rem; box-shadow: 0 10px 20px rgba(0,0,0,0.2); display: flex; align-items: center; gap: 0.5rem; z-index: 2000; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+    .toast-notification.show { opacity: 1; pointer-events: auto; }
+    .managers-list { list-style: none; padding: 0; max-height: 300px; overflow-y: auto; }
+    .managers-list li { display: flex; justify-content: space-between; align-items: center; padding: 0.8rem 0; border-bottom: 1px solid var(--border); cursor: pointer; transition: background var(--transition); }
+    .managers-list li:hover { background: #f8fafc; }
+    .manager-info { display: flex; flex-direction: column; gap: 0.2rem; }
+    .manager-name { font-weight: 600; }
+    .manager-email { font-size: 0.85rem; color: var(--text-secondary); }
+    .manager-status { font-size: 0.8rem; display: flex; align-items: center; gap: 0.3rem; }
+    .manager-status .online-dot { width: 8px; height: 8px; background: var(--success); border-radius: 50%; }
+    .manager-last-login { font-size: 0.75rem; color: #94a3b8; }
+    .manager-actions { display: flex; align-items: center; gap: 0.5rem; }
+    .toggle-admin-btn { background: transparent; border: 1px solid #cbd5e1; padding: 0.3rem 0.8rem; border-radius: 2rem; font-size: 0.8rem; cursor: pointer; transition: var(--transition); }
+    .toggle-admin-btn:hover { background: #f1f5f9; }
+    .toggle-admin-btn.admin { background: #fef3c7; border-color: var(--warning); }
+    .add-manager-section { border-top: 1px solid var(--border); padding-top: 1rem; margin-top: 1rem; }
+    .chat-container { display: flex; flex-direction: column; height: 60vh; }
+    .chat-messages { flex: 1; overflow-y: auto; padding: 0.5rem; background: #f8fafc; border-radius: 1rem; margin-bottom: 1rem; }
+    .chat-message { margin-bottom: 0.8rem; }
+    .chat-message .meta { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.2rem; }
+    .chat-message .meta .sender { font-weight: 600; }
+    .chat-message .text { background: white; padding: 0.5rem 0.8rem; border-radius: 0.8rem; display: inline-block; max-width: 85%; word-wrap: break-word; box-shadow: 0 1px 3px rgba(0,0,0,0.05); font-family: 'Inter', 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif; }
+    .reply-preview { background: #e2e8f0; border-left: 3px solid var(--primary); padding: 0.4rem 0.8rem; margin-bottom: 0.3rem; border-radius: 0.5rem; font-size: 0.8rem; color: #475569; max-width: 85%; word-wrap: break-word; }
+    .reply-preview .reply-author { font-weight: 600; color: var(--primary); }
+    .reply-btn { background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 0.75rem; margin-top: 0.2rem; padding: 0; }
+    .reply-btn:hover { color: var(--primary); }
+    .chat-input-area { display: flex; flex-direction: column; gap: 0.5rem; }
+    .chat-input-row { display: flex; gap: 0.5rem; position: relative; }
+    .chat-input-row input { flex: 1; padding: 0.7rem 1rem; border: 1px solid #cbd5e1; border-radius: 2rem; font-size: 0.9rem; outline: none; font-family: 'Inter', 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif; }
+    .chat-input-row button { background: var(--primary); color: white; border: none; border-radius: 2rem; padding: 0.7rem 1.2rem; cursor: pointer; font-weight: 500; transition: var(--transition); }
+    .chat-input-row button:hover { background: var(--primary-hover); }
+    .emoji-btn { background: transparent !important; color: var(--text-secondary) !important; border: 1px solid #cbd5e1 !important; font-size: 1.2rem; padding: 0.5rem 0.8rem !important; }
+    .emoji-picker { position: absolute; bottom: 60px; right: 0; background: white; border: 1px solid var(--border); border-radius: 1rem; padding: 0.5rem; display: none; grid-template-columns: repeat(6, 1fr); gap: 0.4rem; box-shadow: 0 10px 25px rgba(0,0,0,0.1); z-index: 20; }
+    .emoji-picker span { cursor: pointer; font-size: 1.5rem; text-align: center; padding: 0.2rem; border-radius: 0.5rem; transition: background var(--transition); font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif; }
+    .emoji-picker span:hover { background: #f1f5f9; }
+    .reply-indicator { display: flex; align-items: center; justify-content: space-between; background: #f1f5f9; border-radius: 0.5rem; padding: 0.4rem 0.8rem; font-size: 0.8rem; }
+    .reply-indicator i { cursor: pointer; color: var(--text-secondary); }
+    #planTable th, #planTable td { padding: 0.6rem 0.8rem; text-align: left; border-bottom: 1px solid #f1f5f9; }
+    #planTable th { background: #f8fafc; font-weight: 600; }
+    .plan-input { width: 90px; padding: 0.3rem 0.5rem; border: 1px solid #cbd5e1; border-radius: 0.5rem; text-align: right; }
+    .lag-positive { color: #10b981; }
+    .lag-negative { color: #ef4444; }
+    .period-selectors { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem; align-items: center; }
+    .period-type-select { padding: 0.5rem 0.8rem; border-radius: 2rem; border: 1px solid #cbd5e1; background: white; font-size: 0.9rem; display: flex; align-items: center; gap: 0.4rem; }
+    .period-type-select select { border: none; background: transparent; font-size: 0.9rem; outline: none; padding: 0; }
+    .year-stepper { display: flex; align-items: center; gap: 0.3rem; background: white; border: 1px solid #cbd5e1; border-radius: 2rem; padding: 0.3rem 0.3rem; }
+    .year-stepper input.year-input { width: 70px; padding: 0.4rem 0.5rem; border: none; text-align: center; font-size: 0.9rem; background: transparent; outline: none; border-radius: 1rem; }
+    .year-stepper .nav-btn { background: transparent; border: none; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #475569; transition: background var(--transition); }
+    .year-stepper .nav-btn:hover { background: #f1f5f9; }
+    .month-select { padding: 0.5rem 0.8rem; border: 1px solid #cbd5e1; border-radius: 2rem; font-size: 0.9rem; background: white; }
+    .quarter-select { padding: 0.5rem 0.8rem; border: 1px solid #cbd5e1; border-radius: 2rem; font-size: 0.9rem; background: white; }
+    .task-item { padding: 1rem; border: 1px solid var(--border); border-radius: 1rem; margin-bottom: 0.8rem; }
+    .task-item.overdue { border-color: var(--danger); background: #fee2e2; }
+    .task-item .task-header { display: flex; justify-content: space-between; font-weight: 600; }
+    .task-item .task-due { font-size: 0.8rem; color: var(--text-secondary); }
+    .task-item .task-actions { margin-top: 0.5rem; display: flex; gap: 0.5rem; }
+    .task-item .comment-box { margin-top: 0.5rem; }
+    .task-history { margin-top: 1rem; }
+  </style>
+</head>
+<body>
+<div class="app-wrapper" id="appWrapper">
+  <div id="authScreen" class="screen active auth-screen">
+    <div class="auth-card">
+      <i class="fas fa-envelope auth-icon"></i>
+      <h2>АмМенеджер</h2>
+      <p class="subtitle" id="authSubtitle">Вход / Регистрация</p>
+      <div class="input-group" id="nameGroup"><i class="fas fa-user"></i><input type="text" id="managerNameInput" placeholder="Ваше имя"></div>
+      <div class="input-group"><i class="fas fa-envelope"></i><input type="email" id="emailInput" placeholder="name@example.com"></div>
+      <div class="input-group" id="passwordGroup"><i class="fas fa-lock"></i><input type="password" id="passwordInput" placeholder="Пароль"></div>
+      <button class="auth-btn" id="loginBtn"><i class="fas fa-arrow-right"></i> Войти</button>
+      <div class="hint" id="authHint">Первый вошедший становится администратором</div>
+    </div>
+  </div>
+
+  <div id="dashboardScreen" class="screen">
+    <div class="dashboard">
+      <div id="globalBanner" class="global-banner" style="display:none;"><span class="banner-text" id="bannerText"></span><button class="banner-close" id="bannerCloseBtn"><i class="fas fa-times"></i></button></div>
+      <div class="top-bar">
+        <div class="user-greeting">
+          <div class="avatar" id="userAvatar" title="Сменить аватар"><span id="avatarInitial">А</span></div>
+          <div class="user-info"><div class="user-name-display"><span id="displayName"></span><span class="online-dot" id="onlineIndicator" title="Онлайн"></span></div><span class="user-email-display" id="displayEmail"></span><span class="last-login-display" id="lastLoginDisplay"></span></div>
+        </div>
+        <div class="header-buttons">
+          <span id="adminBadge" class="admin-badge" style="display:none;">👑 Админ</span>
+          <button id="accessBtn" class="btn-icon" style="display:none;"><i class="fas fa-users"></i> Менеджеры</button>
+          <button id="planBtn" class="btn-icon"><i class="fas fa-chart-line"></i> План-факт</button>
+          <button id="tasksBtn" class="btn-icon"><i class="fas fa-tasks"></i> Задачи</button>
+          <button id="repairBtn" class="btn-icon"><i class="fas fa-tools"></i> Ремонт</button>
+          <div class="chat-btn-wrapper"><button id="chatBtn" class="btn-icon"><i class="fas fa-comment-dots"></i> Чат</button><span class="unread-badge" id="unreadBadge" style="display:none;">0</span></div>
+          <button id="bannerBtn" class="btn-icon" style="display:none;"><i class="fas fa-bullhorn"></i> Баннер</button>
+          <div class="date-badge" id="currentDate"></div>
+          <button class="btn-icon" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Выйти</button>
+        </div>
+        <div class="global-notif-wrapper" id="globalNotifWrapper">
+          <div class="notif-btn-global" id="globalNotifBtn"><i class="fas fa-bell"></i><span class="unread-badge" id="globalNotifBadge" style="display:none;">0</span></div>
+          <div class="notifications-dropdown" id="globalNotifDropdown"></div>
+        </div>
+      </div>
+      <div class="clients-area">
+        <div class="section-title"><h2 id="clientsTitle">👥 Клиенты</h2><div style="display:flex;gap:0.5rem;"><button class="btn-icon" id="backToAllBtn" style="display:none;"><i class="fas fa-arrow-left"></i> Все клиенты</button><button class="add-client-btn" id="openAddClientModal"><i class="fas fa-plus"></i> Добавить</button></div></div>
+        <div class="search-container"><i class="fas fa-search"></i><input type="text" id="searchInput" placeholder="Поиск по клиентам..."></div>
+        <div class="client-table-wrapper"><table id="clientsTable"><thead><tr><th>Имя</th><th>Организация</th><th>Телефон</th><th>День</th><th>Статус</th><th>Менеджер</th><th>Комментарий</th><th></th></tr></thead><tbody></tbody></table></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Все модалки (без изменений) -->
+<!-- ... -->
+
+<div class="toast-notification" id="toast"><i class="fas fa-bell"></i> <span id="toastMessage"></span></div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getDatabase, ref, set, get, onValue, update, onDisconnect } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+  // ЗАМЕНИТЕ НА СВОЙ КОНФИГ
+  const firebaseConfig = {
+    apiKey: "AIzaSyXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+    authDomain: "твой-проект.firebaseapp.com",
+    databaseURL: "https://твой-проект-default-rtdb.firebaseio.com",
+    projectId: "твой-проект",
+    storageBucket: "твой-проект.appspot.com",
+    messagingSenderId: "000000000000",
+    appId: "1:000000000000:web:xxxxxxxxxxxxxxxxxxxx"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  const STORAGE = {
+    CLIENTS: 'clients', MANAGER_NAMES: 'manager_names', FULL_ACCESS: 'full_access_emails',
+    REGISTERED: 'registered_emails', ONLINE_STATUS: 'online_status', LAST_LOGIN_PREFIX: 'last_login_',
+    CHAT_MESSAGES: 'chat_messages', UNREAD_COUNTS: 'unread_counts', PASSWORDS: 'passwords',
+    NOTIFICATIONS: 'notifications', BANNER: 'banner', BANNER_DISMISSED_PREFIX: 'banner_dismissed_',
+    TASKS: 'tasks', TASKS_HISTORY: 'tasks_history', REPAIR_REQUESTS: 'repair_requests',
+    MASTER: 'master', AVATAR_PREFIX: 'avatar_', CURRENT_USER: 'current_user', MANAGER_NAME: 'manager_name'
+  };
+
+  const SPECIAL_EMAIL = 'alexand.markov.96@mail.ru';
+  const OWNER_NAME = 'Александр';
+
+  // Хеширование SHA-256
+  async function hashPassword(password) {
+    const msgBuffer = new TextEncoder().encode(password);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  // Адаптер Firebase
+  const store = {
+    async get(key) { const snap = await get(ref(db, key)); return snap.exists() ? snap.val() : null; },
+    async set(key, val) { await set(ref(db, key), val); },
+    on(key, callback) { return onValue(ref(db, key), (snap) => callback(snap.exists() ? snap.val() : null)); },
+    async update(key, partial) { await update(ref(db, key), partial); },
+    async remove(key) { await set(ref(db, key), null); }
+  };
+
+  // Глобальные переменные
+  let clients = [], chatMessages = [], notifications = [], tasks = [], tasksHistory = [], repairRequests = [];
+  let fullAccessEmails = [], registeredEmails = [];
+  let currentUserEmail = '', managerName = '';
+  let isAdmin = false, isMaster = false;
+  let searchTerm = '', viewingManagerEmail = null;
+  let onlineInterval = null, reminderInterval = null, notifCheckInterval = null, tasksCheckInterval = null;
+  let replyToMessageId = null, emojiPickerInited = false, audioCtx = null;
+  let unsubscribes = [];
+
+  // DOM-элементы
+  const $ = id => document.getElementById(id);
+  const authScreen = $('authScreen'), dashboardScreen = $('dashboardScreen'), globalNotifWrapper = $('globalNotifWrapper');
+  const managerNameInput = $('managerNameInput'), emailInput = $('emailInput'), passwordInput = $('passwordInput');
+  const passwordGroup = $('passwordGroup'), nameGroup = $('nameGroup'), authSubtitle = $('authSubtitle'), authHint = $('authHint');
+  const displayName = $('displayName'), displayEmail = $('displayEmail'), lastLoginDisplay = $('lastLoginDisplay');
+  const onlineIndicator = $('onlineIndicator'), userAvatar = $('userAvatar'), currentDateEl = $('currentDate');
+  const clientsTableBody = document.querySelector('#clientsTable tbody');
+  const clientModal = $('clientModal'), modalTitle = $('modalTitle'), clientName = $('clientName'), clientOrganization = $('clientOrganization');
+  const clientPhone = $('clientPhone'), clientDate = $('clientDate'), clientStatus = $('clientStatus'), reminderDate = $('reminderDate'), reminderTime = $('reminderTime');
+  const clientManagerSelect = $('clientManagerSelect'), managerSelectGroup = $('managerSelectGroup'), clientTransferNeeded = $('clientTransferNeeded');
+  const transferCheckboxGroup = $('transferCheckboxGroup'), clientComment = $('clientComment'), editClientId = $('editClientId');
+  const toast = $('toast'), toastMessage = $('toastMessage');
+  const accessBtn = $('accessBtn'), adminBadge = $('adminBadge'), managersModal = $('managersModal'), managersList = $('managersList'), newManagerEmail = $('newManagerEmail');
+  const chatBtn = $('chatBtn'), chatModal = $('chatModal'), chatMessagesDiv = $('chatMessages'), chatMessageInput = $('chatMessageInput');
+  const emojiBtn = $('emojiBtn'), emojiPicker = $('emojiPicker'), replyIndicator = $('replyIndicator'), replyText = $('replyText'), cancelReplyBtn = $('cancelReplyBtn');
+  const unreadBadge = $('unreadBadge'), clearChatBtn = $('clearChatBtn');
+  const globalNotifBtn = $('globalNotifBtn'), globalNotifBadge = $('globalNotifBadge'), globalNotifDropdown = $('globalNotifDropdown');
+  const searchInput = $('searchInput'), clientsTitle = $('clientsTitle'), backToAllBtn = $('backToAllBtn');
+  const planModal = $('planModal'), planBtn = $('planBtn'), planPeriodType = $('planPeriodType');
+  const monthSelector = $('monthSelector'), quarterSelector = $('quarterSelector'), yearSelector = $('yearSelector');
+  const planMonth = $('planMonth'), planYearMonth = $('planYearMonth'), planQuarter = $('planQuarter'), planYearQuarter = $('planYearQuarter'), planYear = $('planYear');
+  const planTableBody = document.querySelector('#planTable tbody');
+  const globalBanner = $('globalBanner'), bannerText = $('bannerText'), bannerCloseBtn = $('bannerCloseBtn');
+  const bannerBtn = $('bannerBtn'), bannerModal = $('bannerModal'), bannerMessageInput = $('bannerMessageInput'), sendBannerBtn = $('sendBannerBtn'), closeBannerModalBtn = $('closeBannerModalBtn');
+  const tasksModal = $('tasksModal'), tasksBtn = $('tasksBtn'), tasksListContainer = $('tasksListContainer');
+  const taskManagerSelect = $('taskManagerSelect'), taskTitle = $('taskTitle'), taskDescription = $('taskDescription'), taskDueDate = $('taskDueDate');
+  const createTaskBtn = $('createTaskBtn'), taskHistoryContainer = $('taskHistoryContainer'), closeTasksModalBtn = $('closeTasksModalBtn');
+  const repairBtn = $('repairBtn'), repairModal = $('repairModal'), repairTableBody = document.querySelector('#repairTable tbody');
+  const openAddRepairBtn = $('openAddRepairBtn'), closeRepairModalBtn = $('closeRepairModalBtn');
+  const repairFormModal = $('repairFormModal'), repairFormTitle = $('repairFormTitle'), repairTitle = $('repairTitle'), repairSerial = $('repairSerial');
+  const repairReason = $('repairReason'), repairClient = $('repairClient'), repairStatus = $('repairStatus'), editRepairId = $('editRepairId');
+  const saveRepairBtn = $('saveRepairBtn'), closeRepairFormBtn = $('closeRepairFormBtn');
+
+  const escapeHtml = (text) => String(text).replace(/[&<>"]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[m]);
+
+  function playNotificationSound() {
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
+      o.connect(g); g.connect(audioCtx.destination); o.frequency.value = 800;
+      g.gain.setValueAtTime(0.3, audioCtx.currentTime); o.start();
+      g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime+0.2); o.stop(audioCtx.currentTime+0.2);
+    } catch(e){}
+  }
+
+  function showToast(text) {
+    toastMessage.textContent = text; toast.classList.add('show'); playNotificationSound();
+    setTimeout(() => toast.classList.remove('show'), 3000);
+    if (Notification.permission === "granted") new Notification("АмМенеджер", { body: text, icon: "https://cdn-icons-png.flaticon.com/512/1827/1827341.png" });
+  }
+
+  function updateDateBadge() { currentDateEl.textContent = new Date().toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'}); }
+  function formatNumber(num) { return num?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') || '0'; }
+
+  // Уведомления
+  async function addNotification(managerEmail, text, clientId = null) {
+    const newNotif = { id: Date.now().toString(), managerEmail, text, timestamp: Date.now(), read: false, clientId };
+    notifications.push(newNotif);
+    await store.set(STORAGE.NOTIFICATIONS, notifications);
+    updateGlobalNotifBadge();
+    if (globalNotifDropdown.classList.contains('show')) renderNotifications();
+    globalNotifBtn.classList.add('bell-animation');
+    setTimeout(() => globalNotifBtn.classList.remove('bell-animation'), 600);
+    playNotificationSound();
+  }
+
+  async function removeNotification(id) {
+    notifications = notifications.filter(n => n.id !== id);
+    await store.set(STORAGE.NOTIFICATIONS, notifications);
+    updateGlobalNotifBadge();
+    if (globalNotifDropdown.classList.contains('show')) renderNotifications();
+  }
+
+  function updateGlobalNotifBadge() {
+    const unread = notifications.filter(n => n.managerEmail === currentUserEmail && !n.read).length;
+    globalNotifBadge.textContent = unread;
+    globalNotifBadge.style.display = unread > 0 ? 'flex' : 'none';
+  }
+
+  function renderNotifications() {
+    const userNotifs = notifications.filter(n => n.managerEmail === currentUserEmail).sort((a,b) => b.timestamp - a.timestamp);
+    globalNotifDropdown.innerHTML = userNotifs.length ? userNotifs.map(n => {
+      const time = new Date(n.timestamp).toLocaleString('ru-RU');
+      return `<div class="notif-item" data-id="${n.id}" data-client-id="${n.clientId||''}"><div class="notif-content">${escapeHtml(n.text)}<div class="notif-time">${time}</div></div><button class="notif-close"><i class="fas fa-times"></i></button></div>`;
+    }).join('') : '<div style="padding:1rem;text-align:center;color:var(--text-secondary)">Нет уведомлений</div>';
+    // обработчики
+    globalNotifDropdown.querySelectorAll('.notif-item').forEach(item => {
+      item.addEventListener('click', function(e) { if (e.target.closest('.notif-close')) return; const cId = this.dataset.clientId; if (cId) { globalNotifDropdown.classList.remove('show'); editClientById(cId); } });
+    });
+    globalNotifDropdown.querySelectorAll('.notif-close').forEach(btn => btn.addEventListener('click', async function(e) { e.stopPropagation(); await removeNotification(this.closest('.notif-item').dataset.id); }));
+  }
+
+  globalNotifBtn.addEventListener('click', (e) => { e.stopPropagation(); if (!globalNotifDropdown.classList.contains('show')) { renderNotifications(); globalNotifDropdown.classList.add('show'); } else globalNotifDropdown.classList.remove('show'); });
+  document.addEventListener('click', (e) => { if (!globalNotifBtn.contains(e.target) && !globalNotifDropdown.contains(e.target)) globalNotifDropdown.classList.remove('show'); });
+
+  // Клиенты
+  function getStatusBadgeClass(status, transfer) {
+    if (transfer) return 'badge-transfer';
+    return {'Новый':'badge-new','В работе':'badge-inwork','Думает':'badge-thinking','Сделка':'badge-done','Отказ':'badge-reject'}[status] || 'badge-new';
+  }
+
+  function getVisibleClients() {
+    let visible = viewingManagerEmail ? clients.filter(c => c.owner === viewingManagerEmail) :
+                  isAdmin ? clients : clients.filter(c => c.owner === currentUserEmail && !c.transferNeeded);
+    if (searchTerm.trim()) {
+      const t = searchTerm.toLowerCase();
+      visible = visible.filter(c => (c.name||'').toLowerCase().includes(t) || (c.organization||'').toLowerCase().includes(t) || (c.phone||'').toLowerCase().includes(t) || (c.date||'').toLowerCase().includes(t) || (c.status||'').toLowerCase().includes(t) || (c.comment||'').toLowerCase().includes(t));
+    }
+    return visible;
+  }
+
+  async function renderClientsTable() {
+    if (!clientsTableBody) return;
+    const visible = getVisibleClients();
+    if (!visible.length) { clientsTableBody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:2rem;">Нет клиентов</td></tr>'; return; }
+    const names = await store.get(STORAGE.MANAGER_NAMES) || {};
+    clientsTableBody.innerHTML = visible.map(c => {
+      const transfer = c.transferNeeded === true;
+      const statusLabel = transfer ? '⚠️ Передать' : c.status || 'Новый';
+      const statusClass = getStatusBadgeClass(c.status, transfer);
+      const mgr = c.owner ? (names[c.owner] || c.owner) : (transfer ? 'Нет менеджера' : '');
+      const bell = c.reminder?.enabled ? '<i class="fas fa-bell reminder-icon"></i>' : '';
+      const deleteIcon = isAdmin ? `<i class="fas fa-trash-alt" data-action="delete" data-id="${c.id}"></i>` : '';
+      return `<tr class="client-row" data-id="${c.id}">
+        <td>${bell}<strong>${escapeHtml(c.name)}</strong></td><td>${escapeHtml(c.organization||'—')}</td><td>${escapeHtml(c.phone||'—')}</td><td>${c.date||'—'}</td>
+        <td><span class="badge ${statusClass}">${escapeHtml(statusLabel)}</span></td><td>${escapeHtml(mgr||'—')}</td>
+        <td class="comment-cell" title="${escapeHtml(c.comment||'')}">${escapeHtml((c.comment||'').length>20?c.comment.slice(0,20)+'…':c.comment||'—')}</td>
+        <td class="action-icons"><i class="fas fa-edit" data-action="edit" data-id="${c.id}"></i>${deleteIcon}</td></tr>`;
+    }).join('');
+  }
+
+  function refreshUI() {
+    renderClientsTable(); updateDateBadge(); updateAvatarDisplay();
+    store.get(STORAGE.MANAGER_NAMES).then(names => {
+      clientsTitle.textContent = viewingManagerEmail ? `👤 Клиенты: ${escapeHtml((names||{})[viewingManagerEmail]||viewingManagerEmail)}` : '👥 Клиенты';
+    });
+    backToAllBtn.style.display = viewingManagerEmail ? 'flex' : 'none';
+    managerSelectGroup.style.display = isAdmin ? 'block' : 'none';
+    transferCheckboxGroup.style.display = isAdmin ? 'flex' : 'none';
+  }
+
+  async function updateAvatarDisplay() {
+    const data = await store.get(STORAGE.AVATAR_PREFIX + currentUserEmail);
+    userAvatar.innerHTML = data ? `<img src="${data}"><div class="overlay-icon"><i class="fas fa-camera"></i></div>` : `<span>${managerName?managerName[0].toUpperCase():'?'}</span>`;
+  }
+
+  userAvatar.addEventListener('click', () => {
+    const input = document.createElement('input'); input.type='file'; input.accept='image/*';
+    input.onchange = async e => { const f=e.target.files[0]; if(!f)return; const r=new FileReader(); r.onload=async ev=>{await store.set(STORAGE.AVATAR_PREFIX + currentUserEmail, ev.target.result); updateAvatarDisplay(); showToast('🖼️ Аватар обновлён');}; r.readAsDataURL(f); };
+    input.click();
+  });
+
+  clientsTableBody.addEventListener('click', e => {
+    const t = e.target;
+    if (t.dataset.action==='edit') return editClientById(t.dataset.id);
+    if (t.dataset.action==='delete') return deleteClientById(t.dataset.id);
+    const row = t.closest('.client-row'); if (row?.dataset.id) editClientById(row.dataset.id);
+  });
+
+  function canModifyClient(c) { if(viewingManagerEmail)return isAdmin; if(c.transferNeeded)return isAdmin; return isAdmin||c.owner===currentUserEmail; }
+
+  async function populateManagerSelect(sel) {
+    const names = await store.get(STORAGE.MANAGER_NAMES) || {};
+    clientManagerSelect.innerHTML = '<option value="">— Без менеджера —</option>' + registeredEmails.map(e=>`<option value="${e}" ${e===sel?'selected':''}>${names[e]||e}</option>`).join('');
+  }
+
+  async function editClientById(id) {
+    const c = clients.find(c=>c.id===id); if(!c||!canModifyClient(c)){showToast('⛔ Нет прав');return;}
+    modalTitle.textContent='Карточка клиента'; clientName.value=c.name||''; clientOrganization.value=c.organization||''; clientPhone.value=c.phone||'';
+    clientDate.value=c.date||''; clientStatus.value=c.status||'Новый';
+    if (c.reminder?.enabled) { reminderDate.value = c.reminder.date || ''; reminderTime.value = c.reminder.time || ''; }
+    else { reminderDate.value = ''; reminderTime.value = ''; }
+    clientTransferNeeded.checked=c.transferNeeded===true; clientComment.value=c.comment||''; editClientId.value=c.id; await populateManagerSelect(c.owner);
+    clientModal.classList.add('show');
+  }
+
+  async function deleteClientById(id) {
+    if (!isAdmin) { showToast('⛔ Только администратор может удалять клиентов'); return; }
+    const c = clients.find(c=>c.id===id); if(!c){showToast('Клиент не найден');return;}
+    if(confirm('Удалить клиента?')){ clients=clients.filter(x=>x.id!==id); await store.set(STORAGE.CLIENTS, clients); refreshUI(); showToast('🗑️ Клиент удалён'); }
+  }
+
+  function resetClientModal() {
+    ['clientName','clientOrganization','clientDate','reminderDate','reminderTime','clientComment'].forEach(id=>$(id).value='');
+    clientPhone.value = '+7 ('; clientStatus.value='Новый'; clientTransferNeeded.checked=false; editClientId.value=''; populateManagerSelect(''); modalTitle.textContent='Новый клиент';
+  }
+
+  clientPhone.addEventListener('input', function() {
+    let val = this.value.replace(/\D/g, '');
+    if (val.length === 0) { this.value = '+7 ('; return; }
+    if (val.startsWith('7')) val = val.substring(1);
+    if (val.startsWith('8')) val = val.substring(1);
+    let formatted = '+7 ('; if (val.length > 0) formatted += val.substring(0,3); if (val.length > 3) formatted += ') ' + val.substring(3,6); if (val.length > 6) formatted += '-' + val.substring(6,8); if (val.length > 8) formatted += '-' + val.substring(8,10);
+    this.value = formatted;
+  });
+  clientPhone.addEventListener('blur', function() { if (this.value === '+7 (') this.value = ''; });
+
+  async function saveClientFromModal() {
+    const name = clientName.value.trim(); if(!name){alert('Имя обязательно');return;}
+    const data = { name, organization:clientOrganization.value.trim(), phone:clientPhone.value.trim(), date:clientDate.value, status:clientStatus.value, comment:clientComment.value.trim(), transferNeeded:clientTransferNeeded.checked };
+    const rd=reminderDate.value, rt=reminderTime.value; data.reminder = (rd&&rt)?{date:rd,time:rt,enabled:true}:null;
+    const id=editClientId.value; data.owner=currentUserEmail;
+    if(isAdmin){ if(data.transferNeeded) data.owner=''; else if(clientManagerSelect.value) data.owner=clientManagerSelect.value; }
+    if(id){ const idx=clients.findIndex(c=>c.id===id); if(idx!==-1&&canModifyClient(clients[idx])) clients[idx]={...clients[idx],...data}; else{showToast('⛔ Нет прав');return;} }
+    else clients.push({id:Date.now().toString(),...data});
+    await store.set(STORAGE.CLIENTS, clients); clientModal.classList.remove('show'); refreshUI(); showToast('✅ Сохранено');
+  }
+
+  // Чат
+  const EMOJIS = '😀😂🤣😍🥰😘😗😙😚😋😛😜🤪😝🤑🤗🤭🤫🤔🤐🤨😐😑😶😏😒🙄😬😮🤤😴😪😵🤐🥴😷🤒🤕🤢🤮🤧😇🥳'.split('');
+  function renderChat() {
+    if(!chatMessagesDiv)return;
+    chatMessagesDiv.innerHTML = chatMessages.map(m=>{
+      const time=new Date(m.timestamp).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
+      const sender=m.senderName||m.senderEmail;
+      let reply=''; if(m.replyTo){ const orig=chatMessages.find(x=>x.id===m.replyTo); if(orig) reply=`<div class="reply-preview"><span class="reply-author">${escapeHtml(orig.senderName||orig.senderEmail)}</span><br>${escapeHtml(orig.text.slice(0,40)+'…')}</div>`; }
+      return `<div class="chat-message" data-message-id="${m.id}">${reply}<div class="meta"><span class="sender">${escapeHtml(sender)}</span><span>${time}</span></div><div class="text">${escapeHtml(m.text)}</div><button class="reply-btn" data-reply-id="${m.id}"><i class="fas fa-reply"></i> Ответить</button></div>`;
+    }).join('');
+    chatMessagesDiv.scrollTop=chatMessagesDiv.scrollHeight;
+  }
+
+  async function sendChatMessage() {
+    const text=chatMessageInput.value.trim(); if(!text)return;
+    chatMessages.push({id:Date.now().toString(),senderEmail:currentUserEmail,senderName:managerName||currentUserEmail,text,timestamp:Date.now(),replyTo:replyToMessageId});
+    await store.set(STORAGE.CHAT_MESSAGES, chatMessages);
+    const counts = await store.get(STORAGE.UNREAD_COUNTS) || {};
+    registeredEmails.forEach(email => { if (email !== currentUserEmail) counts[email] = (counts[email]||0)+1; });
+    await store.set(STORAGE.UNREAD_COUNTS, counts);
+    updateUnreadBadge();
+    chatMessageInput.value=''; clearReplyState(); renderChat();
+    playNotificationSound();
+  }
+
+  function clearReplyState(){ replyToMessageId=null; replyIndicator.style.display='none'; }
+  function toggleEmojiPicker(){ emojiPicker.style.display=emojiPicker.style.display==='grid'?'none':'grid'; }
+  function initEmojiPicker(){
+    if(emojiPickerInited)return; emojiPickerInited=true;
+    emojiPicker.innerHTML=EMOJIS.map(e=>`<span>${e}</span>`).join('');
+    emojiPicker.addEventListener('click',e=>{const span=e.target.closest('span'); if(span){chatMessageInput.value+=span.textContent;emojiPicker.style.display='none';chatMessageInput.focus();}});
+  }
+
+  chatMessagesDiv.addEventListener('click', e => {
+    const btn=e.target.closest('.reply-btn'); if(btn){ const msg=chatMessages.find(m=>m.id===btn.dataset.replyId);
+    if(msg){ replyToMessageId=msg.id; replyText.textContent=`Ответ ${escapeHtml(msg.senderName||msg.senderEmail)}: «${escapeHtml(msg.text.slice(0,30))}»`; replyIndicator.style.display='flex'; chatMessageInput.focus(); } }
+  });
+
+  clearChatBtn.addEventListener('click', async () => {
+    if (currentUserEmail !== SPECIAL_EMAIL) return;
+    if (confirm('Очистить чат полностью?')) {
+      chatMessages = [];
+      await store.set(STORAGE.CHAT_MESSAGES, chatMessages);
+      await store.set(STORAGE.UNREAD_COUNTS, {});
+      updateUnreadBadge(); renderChat(); showToast('🗑️ Чат очищен');
+    }
+  });
+
+  async function updateUnreadBadge() {
+    const counts = await store.get(STORAGE.UNREAD_COUNTS) || {};
+    const count = counts[currentUserEmail] || 0;
+    unreadBadge.style.display = count > 0 ? 'flex' : 'none';
+    if (count > 0) unreadBadge.textContent = count;
+  }
+
+  // Менеджеры и админка
+  function updateAdminState() {
+    if (currentUserEmail === SPECIAL_EMAIL) {
+      isAdmin = true;
+      adminBadge.style.display = accessBtn.style.display = 'inline-block';
+      bannerBtn.style.display = 'inline-flex';
+      refreshUI(); return;
+    }
+    isAdmin = fullAccessEmails.includes(currentUserEmail);
+    adminBadge.style.display = accessBtn.style.display = isAdmin ? 'inline-block' : 'none';
+    bannerBtn.style.display = 'none';
+    refreshUI();
+  }
+
+  async function renderManagersList() {
+    const names = await store.get(STORAGE.MANAGER_NAMES) || {};
+    const onlineStatus = await store.get(STORAGE.ONLINE_STATUS) || {};
+    managersList.innerHTML = registeredEmails.map(e => {
+      const online = onlineStatus[e] ? (Date.now() - onlineStatus[e] < 60000) : false;
+      const last = onlineStatus[e]; // упрощённо, можно хранить отдельно, но в коде используется last_login
+      const lastStr = last ? new Date(last).toLocaleString('ru-RU',{day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'}) : 'Нет данных';
+      const isFullAdmin = fullAccessEmails.includes(e);
+      return `<li onclick="window.viewManagerClientsFromList('${e}')"><div class="manager-info"><span class="manager-name">${escapeHtml(names[e]||'—')} ${isFullAdmin?'👑':''}</span><span class="manager-email">${escapeHtml(e)}</span><div class="manager-status">${online?'<span class="online-dot"></span> Онлайн':'<span style="color:#94a3b8">Не в сети</span>'} <span class="manager-last-login">${lastStr}</span></div></div><div class="manager-actions" onclick="event.stopPropagation()"><button class="toggle-admin-btn ${isFullAdmin?'admin':''}" onclick="window.toggleAdminRights('${e}')">${isFullAdmin?'Админ':'Сделать админом'}</button><button class="btn-danger" onclick="window.deleteManager('${e}')"><i class="fas fa-trash-alt"></i></button></div></li>`;
+    }).join('');
+  }
+
+  window.viewManagerClientsFromList = (email) => { viewingManagerEmail=email; searchTerm=''; searchInput.value=''; managersModal.classList.remove('show'); refreshUI(); };
+  window.toggleAdminRights = async (email) => {
+    if(!isAdmin)return;
+    if(fullAccessEmails.includes(email)) fullAccessEmails=fullAccessEmails.filter(e=>e!==email); else fullAccessEmails.push(email);
+    await store.set(STORAGE.FULL_ACCESS, fullAccessEmails); updateAdminState(); renderManagersList(); showToast('Права обновлены');
+  };
+  window.deleteManager = async (email) => {
+    if(!isAdmin||email===currentUserEmail)return;
+    if(!confirm(`Удалить менеджера ${email}?`))return;
+    registeredEmails=registeredEmails.filter(e=>e!==email); await store.set(STORAGE.REGISTERED, registeredEmails);
+    fullAccessEmails=fullAccessEmails.filter(e=>e!==email); await store.set(STORAGE.FULL_ACCESS, fullAccessEmails);
+    const names = await store.get(STORAGE.MANAGER_NAMES) || {}; delete names[email]; await store.set(STORAGE.MANAGER_NAMES, names);
+    await store.remove(`${STORAGE.LAST_LOGIN_PREFIX}${email}`); await store.remove(`${STORAGE.AVATAR_PREFIX}${email}`);
+    const passwords = await store.get(STORAGE.PASSWORDS) || {}; delete passwords[email]; await store.set(STORAGE.PASSWORDS, passwords);
+    clients = clients.map(c=>c.owner===email?{...c,owner:'',transferNeeded:true}:c); await store.set(STORAGE.CLIENTS, clients);
+    if(viewingManagerEmail===email) viewingManagerEmail=null;
+    updateAdminState(); renderManagersList(); refreshUI(); showToast('Менеджер удалён');
+  };
+
+  // План-факт
+  function initPlanSelectors() {
+    const months = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+    months.forEach((m, i) => { planMonth.innerHTML += `<option value="${String(i+1).padStart(2,'0')}">${m}</option>`; });
+    const now = new Date(); const y = now.getFullYear();
+    planYearMonth.value = y; planYearQuarter.value = y; planYear.value = y;
+    planMonth.value = String(now.getMonth()+1).padStart(2,'0');
+    planQuarter.value = `Q${Math.ceil((now.getMonth()+1)/3)}`;
+  }
+
+  function getPeriodKey() {
+    const type = planPeriodType.value;
+    if (type === 'month') return `month_${planYearMonth.value}-${planMonth.value}`;
+    if (type === 'quarter') return `quarter_${planYearQuarter.value}-${planQuarter.value}`;
+    return `year_${planYear.value}`;
+  }
+
+  function getPeriodRange() {
+    const type = planPeriodType.value;
+    if (type === 'month') {
+      const y = parseInt(planYearMonth.value), m = parseInt(planMonth.value)-1;
+      const start = new Date(y,m,1), end = new Date(y,m+1,0,23,59,59);
+      return {start,end,totalDays:new Date(y,m+1,0).getDate()};
+    }
+    if (type === 'quarter') {
+      const y = parseInt(planYearQuarter.value), q = parseInt(planQuarter.value.replace('Q',''));
+      const startMonth = (q-1)*3;
+      const start = new Date(y,startMonth,1), end = new Date(y,startMonth+3,0,23,59,59);
+      return {start,end,totalDays:Math.round((end-start)/(1000*60*60*24))+1};
+    }
+    const y = parseInt(planYear.value);
+    const start = new Date(y,0,1), end = new Date(y,11,31,23,59,59);
+    return {start,end,totalDays:Math.round((end-start)/(1000*60*60*24))+1};
+  }
+
+  function getPassedDays(start,end) {
+    const now = new Date();
+    if (now<start) return 0;
+    if (now>end) return Math.round((end-start)/(1000*60*60*24))+1;
+    return Math.floor((now-start)/(1000*60*60*24))+1;
+  }
+
+  async function loadPlanData(key) {
+    const raw = await store.get(`plan_${key}`) || {};
+    const migrated = {};
+    for (const [email, val] of Object.entries(raw)) {
+      if (typeof val === 'object' && val !== null && 'plan' in val && 'fact' in val) migrated[email] = val;
+      else if (typeof val === 'number') migrated[email] = {plan:val, fact:0};
+      else migrated[email] = {plan:0, fact:0};
+    }
+    return migrated;
+  }
+
+  async function savePlanData(key, data) { await store.set(`plan_${key}`, data); }
+
+  async function renderPlanTable() {
+    const periodKey = getPeriodKey();
+    const planData = await loadPlanData(periodKey);
+    const {start,end,totalDays} = getPeriodRange();
+    const passedDays = getPassedDays(start,end);
+    const isCurrent = (new Date()>=start && new Date()<=end), isPast = (new Date()>end);
+    const names = await store.get(STORAGE.MANAGER_NAMES) || {};
+    const managers = isAdmin ? registeredEmails : [currentUserEmail];
+    let rows = '';
+    for (const email of managers) {
+      const name = names[email] || email;
+      const entry = planData[email] || {plan:0, fact:0};
+      const plan = entry.plan, fact = entry.fact, percent = plan>0 ? Math.round((fact/plan)*100) : 0;
+      let lagHtml = '', lag = 0;
+      if (isCurrent && plan>0 && passedDays>0) {
+        const expected = Math.round(plan*(passedDays/totalDays));
+        lag = fact - expected;
+        const sign = lag>=0?'+':''; const cls = lag>=0?'lag-positive':'lag-negative';
+        lagHtml = `<span class="${cls}">${sign}${formatNumber(lag)}</span> (ожидалось: ${formatNumber(expected)})`;
+      } else if (isPast) {
+        lag = fact - plan;
+        const sign = lag>=0?'+':''; const cls = lag>=0?'lag-positive':'lag-negative';
+        lagHtml = `<span class="${cls}">${sign}${formatNumber(lag)}</span>`;
+      } else lagHtml = '—';
+      const canEdit = isAdmin;
+      const planDisplay = canEdit ? `<input type="text" class="plan-input plan-val" data-email="${email}" value="${formatNumber(plan)}">` : formatNumber(plan);
+      const factDisplay = canEdit ? `<input type="text" class="plan-input fact-val" data-email="${email}" value="${formatNumber(fact)}">` : formatNumber(fact);
+      rows += `<tr><td>${escapeHtml(name)}</td><td>${planDisplay}</td><td>${factDisplay}</td><td>${percent}%</td><td>${lagHtml}</td><td>${canEdit?'<button class="btn-icon save-plan-btn">💾</button>':''}</td></tr>`;
+    }
+    planTableBody.innerHTML = rows || '<tr><td colspan="6">Нет данных</td></tr>';
+    document.querySelectorAll('.save-plan-btn').forEach(btn => {
+      btn.addEventListener('click', async function() {
+        const row = this.closest('tr');
+        const email = row.querySelector('.plan-val').dataset.email;
+        const plan = parseInt(row.querySelector('.plan-val').value.replace(/\s/g,''))||0;
+        const fact = parseInt(row.querySelector('.fact-val').value.replace(/\s/g,''))||0;
+        const key = getPeriodKey();
+        const data = await loadPlanData(key);
+        data[email] = {plan, fact};
+        await savePlanData(key, data);
+        await renderPlanTable(); showToast('✅ Сохранено');
+      });
+    });
+  }
+
+  function updatePeriodUI() {
+    const type = planPeriodType.value;
+    monthSelector.style.display = type==='month'?'flex':'none';
+    quarterSelector.style.display = type==='quarter'?'flex':'none';
+    yearSelector.style.display = type==='year'?'flex':'none';
+  }
+
+  function openPlanModal() { updatePeriodUI(); renderPlanTable(); planModal.classList.add('show'); }
+
+  function changeYear(input, delta) {
+    let val = parseInt(input.value)||new Date().getFullYear();
+    val += delta; if (val<2020) val=2020; if (val>2080) val=2080;
+    input.value = val; renderPlanTable();
+  }
+
+  // Задачи
+  async function saveTasks() { await store.set(STORAGE.TASKS, tasks); }
+  async function saveTasksHistory() { await store.set(STORAGE.TASKS_HISTORY, tasksHistory); }
+
+  async function ensureOwnerName() {
+    const names = await store.get(STORAGE.MANAGER_NAMES) || {};
+    if (names[SPECIAL_EMAIL] !== OWNER_NAME) { names[SPECIAL_EMAIL] = OWNER_NAME; await store.set(STORAGE.MANAGER_NAMES, names); }
+    if (currentUserEmail === SPECIAL_EMAIL && managerName !== OWNER_NAME) {
+      managerName = OWNER_NAME; await store.set(STORAGE.MANAGER_NAME, OWNER_NAME);
+      if (displayName) displayName.textContent = OWNER_NAME;
+    }
+  }
+
+  async function openTasksModal() {
+    await ensureOwnerName();
+    document.getElementById('addTaskForm').style.display = isAdmin ? 'block' : 'none';
+    await populateTaskManagerSelect(); renderTaskList(); renderTaskHistory(); tasksModal.classList.add('show');
+  }
+
+  async function populateTaskManagerSelect() {
+    const names = await store.get(STORAGE.MANAGER_NAMES)||{};
+    taskManagerSelect.innerHTML = registeredEmails.map(e=>`<option value="${e}">${names[e]||e}</option>`).join('');
+  }
+
+  function renderTaskList() {
+    const container = tasksListContainer;
+    const visibleTasks = isAdmin ? tasks : tasks.filter(t=>t.assignedTo===currentUserEmail);
+    if (!visibleTasks.length) { container.innerHTML = '<p>Нет активных задач</p>'; return; }
+    store.get(STORAGE.MANAGER_NAMES).then(names => {
+      container.innerHTML = visibleTasks.map(task => {
+        const dueDate = task.dueDate ? new Date(task.dueDate).toLocaleString('ru-RU') : '—';
+        const overdue = task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'completed';
+        const assignedName = names[task.assignedTo] || task.assignedTo;
+        return `<div class="task-item ${overdue?'overdue':''}">
+          <div class="task-header"><span>${escapeHtml(task.title)}</span><span class="task-due">Срок: ${dueDate}</span></div>
+          <div>${escapeHtml(task.description||'')}</div><div><small>Менеджер: ${escapeHtml(assignedName)}</small></div>
+          <div class="task-actions">
+            ${(isAdmin||task.assignedTo===currentUserEmail) ? `<button class="btn-icon complete-task-btn" data-id="${task.id}">✅ Выполнено</button><button class="btn-icon not-completed-task-btn" data-id="${task.id}">❌ Не выполнено</button>` : ''}
+            ${isAdmin ? `<button class="btn-danger delete-task-btn" data-id="${task.id}">🗑️</button>` : ''}
+          </div>
+          <div class="comment-box" id="comment-${task.id}" style="display:none;"><textarea placeholder="Причина невыполнения..." id="commentText-${task.id}" rows="2"></textarea><button class="btn-primary submit-not-completed" data-id="${task.id}">Отправить</button></div>
+        </div>`;
+      }).join('');
+      // обработчики
+      container.querySelectorAll('.complete-task-btn').forEach(b => b.addEventListener('click', () => completeTask(b.dataset.id)));
+      container.querySelectorAll('.not-completed-task-btn').forEach(b => b.addEventListener('click', () => { document.getElementById(`comment-${b.dataset.id}`).style.display = document.getElementById(`comment-${b.dataset.id}`).style.display === 'none' ? 'block' : 'none'; }));
+      container.querySelectorAll('.submit-not-completed').forEach(b => b.addEventListener('click', () => { const id = b.dataset.id; const comment = document.getElementById(`commentText-${id}`).value.trim(); if (!comment) { alert('Укажите причину'); return; } markTaskNotCompleted(id, comment); }));
+      container.querySelectorAll('.delete-task-btn').forEach(b => b.addEventListener('click', () => { if (confirm('Удалить задачу?')) deleteTask(b.dataset.id); }));
+    });
+  }
+
+  function renderTaskHistory() {
+    const container = taskHistoryContainer;
+    if (!isAdmin) { container.innerHTML = ''; return; }
+    if (!tasksHistory.length) { container.innerHTML = '<p>История пуста</p>'; return; }
+    container.innerHTML = '<h4>📁 История завершённых задач</h4>' + tasksHistory.map(t => {
+      const completedDate = t.completedAt ? new Date(t.completedAt).toLocaleString('ru-RU') : '';
+      return `<div style="font-size:0.85rem;margin-bottom:0.3rem;">✅ ${escapeHtml(t.title)} — ${escapeHtml(t.assignedTo)} (${completedDate})</div>`;
+    }).join('');
+  }
+
+  async function completeTask(id) {
+    const task = tasks.find(t=>t.id===id);
+    if (!task || (task.assignedTo!==currentUserEmail && !isAdmin)) return;
+    task.status = 'completed'; task.completedAt = new Date().toISOString();
+    tasksHistory.push(task); tasks = tasks.filter(t=>t.id!==id);
+    await saveTasks(); await saveTasksHistory();
+    await addNotification(SPECIAL_EMAIL, `✅ Задача "${task.title}" выполнена`);
+    renderTaskList(); renderTaskHistory(); showToast('Задача выполнена');
+  }
+
+  async function markTaskNotCompleted(id, comment) {
+    const task = tasks.find(t=>t.id===id);
+    if (!task || (task.assignedTo!==currentUserEmail && !isAdmin)) return;
+    task.status = 'not_completed'; task.comment = comment;
+    await saveTasks();
+    await addNotification(SPECIAL_EMAIL, `❌ Задача "${task.title}" не выполнена. Причина: ${comment}`);
+    renderTaskList(); showToast('Отмечено как не выполнено');
+  }
+
+  async function deleteTask(id) {
+    if (!isAdmin) return;
+    tasks = tasks.filter(t=>t.id!==id); await saveTasks(); renderTaskList();
+  }
+
+  // Ремонт
+  function getVisibleRepairRequests() {
+    return isAdmin ? repairRequests : repairRequests.filter(r => r.createdBy === currentUserEmail);
+  }
+
+  async function renderRepairTable() {
+    if (!repairTableBody) return;
+    const visible = getVisibleRepairRequests();
+    if (!visible.length) { repairTableBody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:2rem;">Нет заявок</td></tr>'; return; }
+    const names = await store.get(STORAGE.MANAGER_NAMES) || {};
+    repairTableBody.innerHTML = visible.map(r => {
+      const creatorName = names[r.createdBy] || r.createdBy;
+      const createdDate = new Date(r.createdAt).toLocaleDateString('ru-RU');
+      const deleteBtn = isAdmin ? `<i class="fas fa-trash-alt" data-action="delete-repair" data-id="${r.id}"></i>` : '';
+      return `<tr data-id="${r.id}">
+        <td><strong>${escapeHtml(r.title)}</strong></td><td>${escapeHtml(r.serialNumber)}</td><td>${escapeHtml(r.reason)}</td>
+        <td><select class="repair-status-select" data-id="${r.id}"><option value="В ремонте" ${r.status==='В ремонте'?'selected':''}>🔧 В ремонте</option><option value="Отправлено" ${r.status==='Отправлено'?'selected':''}>📦 Отправлено</option><option value="Отремонтировано" ${r.status==='Отремонтировано'?'selected':''}>✅ Отремонтировано</option></select></td>
+        <td>${escapeHtml(r.clientName||'—')}</td><td>${escapeHtml(creatorName)}</td><td>${createdDate}</td>
+        <td class="action-icons"><i class="fas fa-edit" data-action="edit-repair" data-id="${r.id}"></i>${deleteBtn}</td></tr>`;
+    }).join('');
+    // обработчики статуса
+    repairTableBody.querySelectorAll('.repair-status-select').forEach(sel => sel.addEventListener('change', async function(e) {
+      const id = this.dataset.id;
+      const newStatus = this.value;
+      const req = repairRequests.find(r => r.id === id);
+      if (req && (isAdmin || req.createdBy === currentUserEmail)) {
+        req.status = newStatus;
+        await store.set(STORAGE.REPAIR_REQUESTS, repairRequests);
+        showToast('Статус обновлён');
+        renderRepairTable();
+      }
+    }));
+    repairTableBody.querySelectorAll('[data-action="edit-repair"]').forEach(icon => icon.addEventListener('click', () => openEditRepairForm(icon.dataset.id)));
+    repairTableBody.querySelectorAll('[data-action="delete-repair"]').forEach(icon => icon.addEventListener('click', async () => {
+      if (confirm('Удалить заявку?')) {
+        repairRequests = repairRequests.filter(r => r.id !== icon.dataset.id);
+        await store.set(STORAGE.REPAIR_REQUESTS, repairRequests);
+        renderRepairTable(); showToast('Заявка удалена');
+      }
+    }));
+  }
+
+  function openAddRepairForm() {
+    repairFormTitle.textContent = 'Новая заявка на ремонт';
+    repairTitle.value=''; repairSerial.value=''; repairReason.value=''; repairClient.value=''; repairStatus.value='В ремонте'; editRepairId.value='';
+    repairFormModal.classList.add('show');
+  }
+
+  function openEditRepairForm(id) {
+    const req = repairRequests.find(r => r.id === id);
+    if (!req || (!isAdmin && req.createdBy !== currentUserEmail)) { showToast('Нет доступа'); return; }
+    repairFormTitle.textContent = 'Редактирование заявки';
+    repairTitle.value = req.title; repairSerial.value = req.serialNumber; repairReason.value = req.reason;
+    repairClient.value = req.clientName || ''; repairStatus.value = req.status; editRepairId.value = req.id;
+    repairFormModal.classList.add('show');
+  }
+
+  async function saveRepairRequest() {
+    const title = repairTitle.value.trim(), serial = repairSerial.value.trim(), reason = repairReason.value.trim(), clientNameVal = repairClient.value.trim();
+    if (!title || !serial || !reason) return alert('Заполните все обязательные поля');
+    const status = repairStatus.value, id = editRepairId.value;
+    if (id) {
+      const req = repairRequests.find(r => r.id === id);
+      if (req && (isAdmin || req.createdBy === currentUserEmail)) {
+        req.title = title; req.serialNumber = serial; req.reason = reason; req.clientName = clientNameVal; req.status = status;
+      }
+    } else {
+      repairRequests.push({ id: Date.now().toString(), title, serialNumber: serial, reason, clientName: clientNameVal, status, createdBy: currentUserEmail, createdAt: new Date().toISOString() });
+    }
+    await store.set(STORAGE.REPAIR_REQUESTS, repairRequests);
+    repairFormModal.classList.remove('show'); renderRepairTable(); showToast('✅ Заявка сохранена');
+  }
+
+  // Баннер
+  async function checkAndShowBanner(data) {
+    const banner = data || {};
+    if (!banner.id) { globalBanner.style.display = 'none'; return; }
+    const dismissedId = await store.get(STORAGE.BANNER_DISMISSED_PREFIX + currentUserEmail);
+    if (dismissedId === banner.id) { globalBanner.style.display = 'none'; }
+    else { bannerText.textContent = banner.text; globalBanner.style.display = 'flex'; }
+  }
+
+  bannerCloseBtn.addEventListener('click', async () => {
+    const banner = await store.get(STORAGE.BANNER);
+    if (banner) await store.set(STORAGE.BANNER_DISMISSED_PREFIX + currentUserEmail, banner.id);
+    globalBanner.style.display = 'none';
+  });
+
+  // Авторизация
+  async function handleLogin() {
+    const name = managerNameInput.value.trim();
+    const email = emailInput.value.trim().toLowerCase();
+    const password = passwordInput.value.trim();
+    const isSpecial = (email === SPECIAL_EMAIL);
+    if (!email.includes('@')) return alert('Введите email');
+    if (!isSpecial && !password) return alert('Введите пароль');
+
+    if (registeredEmails.includes(email)) {
+      const passwords = await store.get(STORAGE.PASSWORDS) || {};
+      if (!isSpecial) {
+        const hashedInput = await hashPassword(password);
+        if (passwords[email] !== hashedInput) return alert('Неверный пароль');
+      }
+      const names = await store.get(STORAGE.MANAGER_NAMES) || {};
+      const savedName = names[email] || name;
+      await store.set(`${STORAGE.LAST_LOGIN_PREFIX}${email}`, new Date().toISOString());
+      showDashboard(email, isSpecial ? OWNER_NAME : (savedName || email));
+    } else {
+      if (!isSpecial && !name) return alert('Введите имя');
+      if (!isSpecial && password.length < 4) return alert('Пароль должен быть не менее 4 символов');
+      const names = await store.get(STORAGE.MANAGER_NAMES) || {};
+      names[email] = isSpecial ? OWNER_NAME : (name || email);
+      await store.set(STORAGE.MANAGER_NAMES, names);
+      registeredEmails.push(email);
+      await store.set(STORAGE.REGISTERED, registeredEmails);
+      if (!fullAccessEmails.length) { fullAccessEmails.push(email); await store.set(STORAGE.FULL_ACCESS, fullAccessEmails); }
+      if (!isSpecial) {
+        const passwords = await store.get(STORAGE.PASSWORDS) || {};
+        passwords[email] = await hashPassword(password);
+        await store.set(STORAGE.PASSWORDS, passwords);
+      }
+      await store.set(`${STORAGE.LAST_LOGIN_PREFIX}${email}`, new Date().toISOString());
+      showDashboard(email, isSpecial ? OWNER_NAME : (name || email));
+    }
+  }
+
+  async function showDashboard(email, name) {
+    if (email === SPECIAL_EMAIL) name = OWNER_NAME;
+    currentUserEmail = email; managerName = name;
+    await store.set(STORAGE.CURRENT_USER, email);
+    await store.set(STORAGE.MANAGER_NAME, name);
+    displayName.textContent = name; displayEmail.textContent = email;
+    updateLastLoginDisplay();
+    fullAccessEmails = await store.get(STORAGE.FULL_ACCESS) || [];
+    if (email === SPECIAL_EMAIL && !fullAccessEmails.includes(SPECIAL_EMAIL)) {
+      fullAccessEmails.push(SPECIAL_EMAIL); await store.set(STORAGE.FULL_ACCESS, fullAccessEmails);
+    }
+    updateAdminState();
+    updateAvatarDisplay();
+    startOnlineHeartbeat();
+    startReminderChecker();
+    startNotifChecker();
+    startTasksChecker();
+    if (Notification.permission === "default") Notification.requestPermission();
+    initEmojiPicker();
+    await updateUnreadBadge();
+    updateGlobalNotifBadge();
+    await checkAndShowBanner(await store.get(STORAGE.BANNER));
+    authScreen.classList.remove('active'); dashboardScreen.classList.add('active');
+    globalNotifWrapper.style.display = 'flex';
+    searchTerm = ''; searchInput.value = ''; viewingManagerEmail = null;
+    refreshUI();
+  }
+
+  function updateLastLoginDisplay() {
+    store.get(`${STORAGE.LAST_LOGIN_PREFIX}${currentUserEmail}`).then(last => {
+      lastLoginDisplay.textContent = last ? `Последний вход: ${new Date(last).toLocaleDateString('ru-RU',{day:'numeric',month:'long'})} в ${new Date(last).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})}` : 'Первый вход';
+    });
+  }
+
+  function startOnlineHeartbeat() {
+    if (onlineInterval) clearInterval(onlineInterval);
+    onlineIndicator.style.display = 'inline-block';
+    onlineInterval = setInterval(async () => {
+      const s = await store.get(STORAGE.ONLINE_STATUS) || {};
+      s[currentUserEmail] = Date.now(); await store.set(STORAGE.ONLINE_STATUS, s);
+    }, 30000);
+  }
+  function stopOnlineHeartbeat() { clearInterval(onlineInterval); onlineInterval = null; onlineIndicator.style.display = 'none'; }
+
+  async function checkReminders() {
+    const now = Date.now();
+    for (const c of clients) {
+      if (!c.reminder?.enabled) continue;
+      if (currentUserEmail !== SPECIAL_EMAIL && c.owner !== currentUserEmail) continue;
+      const { date, time } = c.reminder;
+      if (!date || !time) continue;
+      const [y, m, d] = date.split('-').map(Number);
+      const [h, min] = time.split(':').map(Number);
+      if (isNaN(y) || isNaN(m) || isNaN(d) || isNaN(h) || isNaN(min)) continue;
+      const remind = new Date(y, m - 1, d, h, min).getTime();
+      if (remind <= now && (now - remind) < 5 * 60 * 1000) {
+        showToast(`🔔 Напоминание: встреча с ${c.name}`);
+        await addNotification(c.owner, `📅 Напоминание о встрече с "${c.name}"`, c.id);
+        c.reminder = null; await store.set(STORAGE.CLIENTS, clients); refreshUI();
+      }
+    }
+  }
+  function startReminderChecker() { checkReminders(); reminderInterval = setInterval(checkReminders, 30000); }
+  function stopReminderChecker() { clearInterval(reminderInterval); }
+
+  async function checkStaleNewClients() {
+    const sevenDays = 7 * 24 * 60 * 60 * 1000;
+    const now = Date.now();
+    for (const c of clients) {
+      if (c.status === 'В работе' && c.owner && !c.transferNeeded) {
+        const created = parseInt(c.id);
+        if (!isNaN(created) && (now - created) > sevenDays) {
+          const alreadyNotified = notifications.some(n => n.clientId === c.id);
+          if (!alreadyNotified) {
+            await addNotification(SPECIAL_EMAIL, `⏳ Клиент «${c.name}» уже 7 дней в статусе «В работе». Пора продвигать!`, c.id);
+          }
+        }
+      }
+    }
+  }
+  function startNotifChecker() { checkStaleNewClients(); notifCheckInterval = setInterval(checkStaleNewClients, 30 * 60 * 1000); }
+  function stopNotifChecker() { clearInterval(notifCheckInterval); }
+
+  async function checkOverdueTasks() {
+    const now = new Date();
+    for (const task of tasks) {
+      if (task.status !== 'completed' && task.dueDate && new Date(task.dueDate) < now && !task.overdueNotified) {
+        await addNotification(task.assignedTo, `⚠️ Просрочена задача: "${task.title}"`);
+        await addNotification(SPECIAL_EMAIL, `⚠️ Просрочена задача "${task.title}" у ${task.assignedTo}`);
+        task.overdueNotified = true; await saveTasks();
+      }
+    }
+  }
+  function startTasksChecker() { checkOverdueTasks(); tasksCheckInterval = setInterval(checkOverdueTasks, 300000); }
+  function stopTasksChecker() { clearInterval(tasksCheckInterval); }
+
+  // Инициализация
+  (async function init() {
+    registeredEmails = (await store.get(STORAGE.REGISTERED)) || [];
+    fullAccessEmails = (await store.get(STORAGE.FULL_ACCESS)) || [];
+    clients = (await store.get(STORAGE.CLIENTS)) || [];
+    chatMessages = (await store.get(STORAGE.CHAT_MESSAGES)) || [];
+    notifications = (await store.get(STORAGE.NOTIFICATIONS)) || [];
+    tasks = (await store.get(STORAGE.TASKS)) || [];
+    tasksHistory = (await store.get(STORAGE.TASKS_HISTORY)) || [];
+    repairRequests = (await store.get(STORAGE.REPAIR_REQUESTS)) || [];
+
+    // подписки
+    unsubscribes.push(store.on(STORAGE.CLIENTS, (data) => { clients = data || []; renderClientsTable(); }));
+    unsubscribes.push(store.on(STORAGE.CHAT_MESSAGES, (data) => { chatMessages = data || []; renderChat(); }));
+    unsubscribes.push(store.on(STORAGE.NOTIFICATIONS, (data) => { notifications = data || []; updateGlobalNotifBadge(); }));
+    unsubscribes.push(store.on(STORAGE.TASKS, (data) => { tasks = data || []; if (tasksModal.classList.contains('show')) renderTaskList(); }));
+    unsubscribes.push(store.on(STORAGE.TASKS_HISTORY, (data) => { tasksHistory = data || []; }));
+    unsubscribes.push(store.on(STORAGE.REPAIR_REQUESTS, (data) => { repairRequests = data || []; if (repairModal.classList.contains('show')) renderRepairTable(); }));
+    unsubscribes.push(store.on(STORAGE.FULL_ACCESS, (data) => { fullAccessEmails = data || []; updateAdminState(); }));
+    unsubscribes.push(store.on(STORAGE.REGISTERED, (data) => { registeredEmails = data || []; }));
+    unsubscribes.push(store.on(STORAGE.BANNER, checkAndShowBanner));
+
+    // мастер
+    const masterRef = ref(db, STORAGE.MASTER);
+    const masterSnap = await get(masterRef);
+    if (!masterSnap.exists() || (Date.now() - masterSnap.val().timestamp > 30000)) {
+      await set(masterRef, { email: currentUserEmail, timestamp: Date.now() });
+      isMaster = true;
+    }
+    if (isMaster) {
+      startNotifChecker();
+      startTasksChecker();
+    }
+
+    // восстановление сессии
+    const savedEmail = await store.get(STORAGE.CURRENT_USER);
+    if (savedEmail && registeredEmails.includes(savedEmail)) {
+      const names = await store.get(STORAGE.MANAGER_NAMES) || {};
+      const savedName = names[savedEmail] || savedEmail;
+      emailInput.value = savedEmail;
+      managerNameInput.value = savedName;
+      await showDashboard(savedEmail, savedName);
+    } else {
+      authScreen.classList.add('active'); dashboardScreen.classList.remove('active');
+      globalNotifWrapper.style.display = 'none';
+    }
+    updateDateBadge();
+  })();
+
+  // Обработчики
+  $('loginBtn').addEventListener('click', handleLogin);
+  emailInput.addEventListener('keypress', e => { if (e.key==='Enter') handleLogin(); });
+  managerNameInput.addEventListener('keypress', e => { if (e.key==='Enter') handleLogin(); });
+  passwordInput.addEventListener('keypress', e => { if (e.key==='Enter') handleLogin(); });
+  $('logoutBtn').addEventListener('click', async () => {
+    stopOnlineHeartbeat(); stopReminderChecker(); stopNotifChecker(); stopTasksChecker();
+    const s = await store.get(STORAGE.ONLINE_STATUS) || {}; delete s[currentUserEmail]; await store.set(STORAGE.ONLINE_STATUS, s);
+    await store.remove(STORAGE.CURRENT_USER);
+    currentUserEmail = ''; managerName = ''; isAdmin = false;
+    authScreen.classList.add('active'); dashboardScreen.classList.remove('active');
+    globalNotifWrapper.style.display = 'none';
+    ['clientModal','managersModal','chatModal','planModal','bannerModal','tasksModal','repairModal','repairFormModal'].forEach(id => $(id).classList.remove('show'));
+    globalNotifDropdown.classList.remove('show');
+  });
+  $('openAddClientModal').addEventListener('click', () => { resetClientModal(); clientModal.classList.add('show'); });
+  $('closeModalBtn').addEventListener('click', () => clientModal.classList.remove('show'));
+  $('saveClientBtn').addEventListener('click', saveClientFromModal);
+  window.addEventListener('click', e => { if (e.target===clientModal) clientModal.classList.remove('show'); if (e.target===managersModal) managersModal.classList.remove('show'); if (e.target===chatModal) chatModal.classList.remove('show'); });
+  $('accessBtn').addEventListener('click', async () => { await renderManagersList(); managersModal.classList.add('show'); });
+  $('addManagerBtn').addEventListener('click', async () => {
+    const email = newManagerEmail.value.trim().toLowerCase();
+    if (!email.includes('@')) return alert('Введите email');
+    if (registeredEmails.includes(email)) return alert('Уже зарегистрирован');
+    registeredEmails.push(email); await store.set(STORAGE.REGISTERED, registeredEmails);
+    newManagerEmail.value = ''; await renderManagersList(); showToast('✅ Добавлен');
+  });
+  $('closeManagersModalBtn').addEventListener('click', () => managersModal.classList.remove('show'));
+  searchInput.addEventListener('input', () => { searchTerm = searchInput.value; renderClientsTable(); });
+  $('backToAllBtn').addEventListener('click', () => { viewingManagerEmail = null; searchTerm = ''; searchInput.value = ''; refreshUI(); });
+  $('sendChatBtn').addEventListener('click', sendChatMessage);
+  chatMessageInput.addEventListener('keypress', e => { if (e.key==='Enter') sendChatMessage(); });
+  $('emojiBtn').addEventListener('click', toggleEmojiPicker);
+  $('closeChatModalBtn').addEventListener('click', () => chatModal.classList.remove('show'));
+  cancelReplyBtn.addEventListener('click', clearReplyState);
+  chatBtn.addEventListener('click', async () => {
+    const counts = await store.get(STORAGE.UNREAD_COUNTS)||{}; counts[currentUserEmail]=0; await store.set(STORAGE.UNREAD_COUNTS, counts);
+    await updateUnreadBadge(); renderChat(); clearChatBtn.style.display = (currentUserEmail === SPECIAL_EMAIL) ? 'inline-block' : 'none'; chatModal.classList.add('show');
+  });
+  planBtn.addEventListener('click', openPlanModal);
+  $('closePlanModalBtn').addEventListener('click', () => planModal.classList.remove('show'));
+  planPeriodType.addEventListener('change', () => { updatePeriodUI(); renderPlanTable(); });
+  planMonth.addEventListener('change', renderPlanTable);
+  planQuarter.addEventListener('change', renderPlanTable);
+  planYearMonth.addEventListener('change', renderPlanTable);
+  planYearQuarter.addEventListener('change', renderPlanTable);
+  planYear.addEventListener('change', renderPlanTable);
+  $('prevMonthYear').addEventListener('click', () => changeYear(planYearMonth, -1));
+  $('nextMonthYear').addEventListener('click', () => changeYear(planYearMonth, 1));
+  $('prevQuarterYear').addEventListener('click', () => changeYear(planYearQuarter, -1));
+  $('nextQuarterYear').addEventListener('click', () => changeYear(planYearQuarter, 1));
+  $('prevYear').addEventListener('click', () => changeYear(planYear, -1));
+  $('nextYear').addEventListener('click', () => changeYear(planYear, 1));
+  tasksBtn.addEventListener('click', openTasksModal);
+  closeTasksModalBtn.addEventListener('click', () => tasksModal.classList.remove('show'));
+  createTaskBtn.addEventListener('click', async () => {
+    if (!isAdmin) return;
+    const title = taskTitle.value.trim(), desc = taskDescription.value.trim(), due = taskDueDate.value, assigned = taskManagerSelect.value;
+    if (!title || !assigned) return alert('Укажите менеджера и заголовок');
+    tasks.push({id:Date.now().toString(), title, description:desc, dueDate:due, assignedTo:assigned, createdBy:currentUserEmail, createdAt:new Date().toISOString(), status:'active'});
+    await saveTasks();
+    await addNotification(assigned, `📌 Новая задача: "${title}"`);
+    renderTaskList(); taskTitle.value=taskDescription.value=taskDueDate.value=''; showToast('Задача создана');
+  });
+  repairBtn.addEventListener('click', async () => { renderRepairTable(); repairModal.classList.add('show'); });
+  closeRepairModalBtn.addEventListener('click', () => repairModal.classList.remove('show'));
+  openAddRepairBtn.addEventListener('click', openAddRepairForm);
+  saveRepairBtn.addEventListener('click', saveRepairRequest);
+  closeRepairFormBtn.addEventListener('click', () => repairFormModal.classList.remove('show'));
+  bannerBtn.addEventListener('click', () => { bannerMessageInput.value = ''; bannerModal.classList.add('show'); });
+  sendBannerBtn.addEventListener('click', async () => {
+    const text = bannerMessageInput.value.trim(); if (!text) return;
+    const banner = { id: Date.now().toString(), text, timestamp: Date.now() };
+    await store.set(STORAGE.BANNER, banner); bannerModal.classList.remove('show'); checkAndShowBanner(banner); showToast('✅ Баннер отправлен');
+  });
+  closeBannerModalBtn.addEventListener('click', () => bannerModal.classList.remove('show'));
+
+  initEmojiPicker();
+  initPlanSelectors();
+</script>
+</body>
+</html>
